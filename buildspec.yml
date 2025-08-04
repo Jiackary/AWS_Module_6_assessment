@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      # Log in to Amazon ECR using the AWS CLI
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      # Retrieve the Git tag associated with the current commit
+      - GIT_TAG=$(git describe --tags --exact-match || echo "latest")
+  build:
+    commands:
+      # Build the Docker image using the provided Dockerfile and tag it with "latest"
+      - docker build -t $ECR_REPO_NAME:latest .
+  post_build:
+    commands:
+      # Tag the Docker image with ECR repository URL for the Git tag
+      - docker tag $ECR_REPO_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:$GIT_TAG
+      # Tag the Docker image with ECR repository URL for "latest"
+      - docker tag $ECR_REPO_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest
+      # Push the Docker image with the Git tag to Amazon ECR
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:$GIT_TAG
+      # Push the Docker image with "latest" tag to Amazon ECR
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:latest
