@@ -14,42 +14,47 @@ app = Flask(__name__)
 #
 
 
-@app.route("/")
-def home():
-    # Complete the code below
-    # The todo_list variable should be returned by running a scan on your DDB table,
-    # which is then converted to a list
-    todo_list =
+# @app.route("/")
+# def home():
+#     # Complete the code below
+#     # The todo_list variable should be returned by running a scan on your DDB table,
+#     # which is then converted to a list
+#     todo_list =
 
-    # can leave this line as is to use the template that's provided
-    return render_template("base.html", todo_list=todo_list)
-
-
-@app.route("/add", methods=["POST"])
-def add():
-    title = request.form.get("title")
-    # Complete code below to create a new item in your todo list
+#     # can leave this line as is to use the template that's provided
+#     return render_template("base.html", todo_list=todo_list)
 
 
-    return redirect(url_for("home"))
+# @app.route("/add", methods=["POST"])
+# def add():
+#     title = request.form.get("title")
+#     # Complete code below to create a new item in your todo list
+
+
+#     return redirect(url_for("home"))
 
 
 
-@app.route("/update/<todo_id>")
-def update(todo_id):
-    # Complete the code below to update an existing item
-    # For this particular app, updating just toggles the completion between True / False
+# @app.route("/update/<todo_id>")
+# def update(todo_id):
+#     # Complete the code below to update an existing item
+#     # For this particular app, updating just toggles the completion between True / False
 
 
-    return redirect(url_for("home"))
+#     return redirect(url_for("home"))
 
 
-@app.route("/delete/<int:todo_id>")
-def delete(todo_id):
-    # Complete the code below to delete an item from the to-do list
+# @app.route("/delete/<int:todo_id>")
+# def delete(todo_id):
+#     # Complete the code below to delete an item from the to-do list
 
 
-    return redirect(url_for("home"))
+#     return redirect(url_for("home"))
+
+
+@app.route('/')
+def index():
+    return 'Hello world'
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
