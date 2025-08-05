@@ -6,7 +6,7 @@ from botocore.exceptions import NoCredentialsError, ClientError
 from datetime import datetime, timezone
 import math
 
-app = Flask(name)
+app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
 
@@ -158,5 +158,5 @@ def delete(todo_id):
     return redirect(url_for("home"))
 
 
-if name == "main":
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)
