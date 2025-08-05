@@ -1,60 +1,96 @@
-from flask import Flask, render_template, request, redirect, url_for
-# You will likely need a database e.g. DynamoDB so you might either boto3 or pynamodb
-# Additional installs here:
-#
-#
-#
+from flask import Flask, render_template_string, request, redirect, url_for
+from pynamodb.models import Model
+from pynamodb.attributes import UnicodeAttribute, NumberAttribute, BooleanAttribute
+import boto3
+from botocore.exceptions import NoCredentialsError, ClientError
+from dotenv import load_dotenv
+import os
 
-
+load_dotenv()
 app = Flask(__name__)
 
-## Instantiate your database here:
-#
-#
-#
+s3_client = boto3.client("s3",
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    aws_session_token=os.getenv("AWS_SESSION_TOKEN"),
+    region_name=os.getenv("AWS_REGION"))
 
+bucket = "assessment-mod-6-1701"
 
-# @app.route("/")
-# def home():
-#     # Complete the code below
-#     # The todo_list variable should be returned by running a scan on your DDB table,
-#     # which is then converted to a list
-#     todo_list =
+class todo(Model):
+    class Meta:
+        table_name = "todo"
+        aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
+        aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+        aws_session_token = os.getenv("AWS_SESSION_TOKEN")
+        region_name = os.getenv("AWS_REGION")
+    
+    title = UnicodeAttribute(hash_key=True)
+    id = NumberAttribute(range_key=True)
+    complete = BooleanAttribute(default=False)
 
-#     # can leave this line as is to use the template that's provided
-#     return render_template("base.html", todo_list=todo_list)
+@app.route("/")
+def home():
+    try:
+        if not todo.exists():
+            print("Table doesn't exist, creating...")
+            todo.create_table(read_capacity_units=1, write_capacity_units=1, wait=True)
+            print("Table created successfully")
+        
+        todo_list = list(todo.scan())
+        response = s3_client.get_object(Bucket=bucket, Key="base.html")
+        html_template = response['Body'].read().decode('utf-8')
+        return render_template_string(html_template, todo_list=todo_list)
+    except Exception as e:
+        print(f"Error: {e}")
+        return f"Error: {e}", 500
 
+@app.route("/add", methods=["POST"])
+def add():
+    title = request.form.get("title")
+    
+    # Get the next available ID by scanning existing todos
+    try:
+        existing_todos = list(todo.scan())
+        if existing_todos:
+            next_id = max([t.id for t in existing_todos]) + 1
+        else:
+            next_id = 1
+    except:
+        next_id = 1
+    
+    # Create and save the todo instance - THIS IS THE CORRECT WAY
+    new_todo = todo(title=title, id=next_id, complete=False)
+    new_todo.save()
+    return redirect(url_for("home"))
 
-# @app.route("/add", methods=["POST"])
-# def add():
-#     title = request.form.get("title")
-#     # Complete code below to create a new item in your todo list
+@app.route("/update/<int:todo_id>")
+def update(todo_id):
+    # Since we need both hash_key (title) and range_key (id) to get an item,
+    # we need to scan to find the item by ID
+    try:
+        for item in todo.scan():
+            if item.id == todo_id:
+                item.complete = not item.complete
+                item.save()
+                break
+    except Exception as e:
+        print(f"Error updating todo: {e}")
+    
+    return redirect(url_for("home"))
 
-
-#     return redirect(url_for("home"))
-
-
-
-# @app.route("/update/<todo_id>")
-# def update(todo_id):
-#     # Complete the code below to update an existing item
-#     # For this particular app, updating just toggles the completion between True / False
-
-
-#     return redirect(url_for("home"))
-
-
-# @app.route("/delete/<int:todo_id>")
-# def delete(todo_id):
-#     # Complete the code below to delete an item from the to-do list
-
-
-#     return redirect(url_for("home"))
-
-
-@app.route('/')
-def index():
-    return 'Hello world'
+@app.route("/delete/<int:todo_id>")
+def delete(todo_id):
+    # Same approach - scan to find the item by ID
+    try:
+        for item in todo.scan():
+            if item.id == todo_id:
+                item.delete()
+                break
+    except Exception as e:
+        print(f"Error deleting todo: {e}")
+    
+    return redirect(url_for("home"))
 
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0')
+    app.run(host="0.0.0.0",debug=True)
