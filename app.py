@@ -41,18 +41,25 @@ def add():
     title = request.form.get("title")
     # Get the next available ID by scanning existing todos
     try:
-        existing_todos = list(todo.scan())
-        if existing_todos:
-            next_id = max([t.id for t in existing_todos]) + 1
+        if len(title)>=1:
+            
+            try:
+                existing_todos = list(todo.scan())
+                if existing_todos:
+                    next_id = max([t.id for t in existing_todos]) + 1
+                else:
+                    next_id = 1
+            except:
+                next_id = 1
+            
+            # Create and save the todo instance - THIS IS THE CORRECT WAY
+            new_todo = todo(title=title, id=next_id, complete=False)
+            new_todo.save()
+            return redirect(url_for("home"))
         else:
-            next_id = 1
+             return redirect(url_for("home"))
     except:
-        next_id = 1
-    
-    # Create and save the todo instance - THIS IS THE CORRECT WAY
-    new_todo = todo(title=title, id=next_id, complete=False)
-    new_todo.save()
-    return redirect(url_for("home"))
+         return redirect(url_for("home"))
 
 @app.route("/update/<int:todo_id>")
 def update(todo_id):
