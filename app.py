@@ -3,27 +3,18 @@ from pynamodb.models import Model
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute, BooleanAttribute
 import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
-from dotenv import load_dotenv
-import os
 
-load_dotenv()
 app = Flask(__name__)
 
-s3_client = boto3.client("s3",
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    aws_session_token=os.getenv("AWS_SESSION_TOKEN"),
-    region_name=os.getenv("AWS_REGION"))
 
-bucket = "assessment-mod-6-1701"
+s3_client = boto3.client("s3", region_name="ap-southeast-1") 
+bucket = "static-webpages-s3"
 
 class todo(Model):
     class Meta:
         table_name = "todo"
-        aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
-        aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-        aws_session_token = os.getenv("AWS_SESSION_TOKEN")
-        region_name = os.getenv("AWS_REGION")
+        region_name = "ap-southeast-1"  
+        
     
     title = UnicodeAttribute(hash_key=True)
     id = NumberAttribute(range_key=True)
@@ -48,7 +39,6 @@ def home():
 @app.route("/add", methods=["POST"])
 def add():
     title = request.form.get("title")
-    
     # Get the next available ID by scanning existing todos
     try:
         existing_todos = list(todo.scan())
@@ -76,7 +66,6 @@ def update(todo_id):
                 break
     except Exception as e:
         print(f"Error updating todo: {e}")
-    
     return redirect(url_for("home"))
 
 @app.route("/delete/<int:todo_id>")
@@ -89,8 +78,7 @@ def delete(todo_id):
                 break
     except Exception as e:
         print(f"Error deleting todo: {e}")
-    
     return redirect(url_for("home"))
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",port=8080,debug=True)
+    app.run(host="0.0.0.0", port=8080, debug=True)
