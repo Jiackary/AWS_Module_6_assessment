@@ -28,10 +28,16 @@ def home():
             todo.create_table(read_capacity_units=1, write_capacity_units=1, wait=True)
             print("Table created successfully")
         
+        search_query = request.args.get('search', '').strip()
         todo_list = list(todo.scan())
+        
+
+        if search_query:
+            todo_list = [t for t in todo_list if search_query.lower() in t.title.lower()]
+        
         response = s3_client.get_object(Bucket=bucket, Key="base.html")
         html_template = response['Body'].read().decode('utf-8')
-        return render_template_string(html_template, todo_list=todo_list)
+        return render_template_string(html_template, todo_list=todo_list, search_query=search_query)
     except Exception as e:
         print(f"Error: {e}")
         return f"Error: {e}", 500
